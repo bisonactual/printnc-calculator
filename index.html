@@ -1115,22 +1115,22 @@
       ]),
       section('Sensors', [
         ['LJ8A3-2-Z-AX M8', 'Inductive Limit Switch', qty(6)],
-        ['—', 'Emergency Stop', qty(1)],
       ]),
       ...electronicsSection(accs),
       ...accessoriesSection(accs),
       section('Fasteners', [
-        ['M4×12',   'Socket Head Cap Screw', qty(25)],
-        ['M4×16',   'Socket Head Cap Screw', qty(25)],
-        ['M5×12',   'Socket Head Cap Screw', qty(10)],
-        ['M5×20',   'Socket Head Cap Screw', qty(null)],
-        ['M6×12',   'Socket Head Cap Screw', qty(null)],
-        ['M6×30',   'Socket Head Cap Screw', qty(30)],
-        ['M6×50',   'Socket Head Cap Screw', qty(30)],
-        ['M8×45',   'Socket Head Cap Screw', qty(3)],
-        ['M5 NUT',  'Hex Nut',               qty(54)],
-        ['M8×8',    'Grub Screw',            qty(4)],
-      ]),
+        ['M4×12',         'Socket Head Cap Screw', qty(25)],
+        ['M4×16',         'Socket Head Cap Screw', qty(25)],
+        ['M5×12',         'Socket Head Cap Screw', qty(10)],
+        ['M5×20',         'Socket Head Cap Screw', qty(null)],
+        ['M6×12',         'Socket Head Cap Screw', qty(null)],
+        ['M6×30',         'Socket Head Cap Screw', qty(30)],
+        ['M6×50',         'Socket Head Cap Screw', qty(30)],
+        ['M8×45',         'Socket Head Cap Screw', qty(3)],
+        ['M5 NUT',        'Hex Nut',               qty(54)],
+        ['M8×8',          'Grub Screw',            qty(4)],
+        ['M5×185 Thread', 'M5 Threaded Rod',       qty(18)],
+      ], '⚠ Bolt counts listed here are approximate — expect to need significantly more than shown.'),
     ];
 
     $('bomContent').innerHTML = sections.join('');
@@ -1141,10 +1141,11 @@
     return `<span class="qty-num">${n}</span>${unit ? `<span class="qty-unit">${unit}</span>` : ''}`;
   }
 
-  function section(title, rows) {
+  function section(title, rows, note) {
     return `
       <div class="bom-section">
         <div class="bom-section-title">${title}</div>
+        ${note ? `<div style="padding:10px 18px;font-size:0.75rem;color:var(--yellow);border-bottom:1px solid var(--border);">${note}</div>` : ''}
         <table class="bom-table">
           ${rows.map(([part, desc, q]) => `
             <tr>
