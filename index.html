@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrintNC v4 Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #4f8ef7;
+      --accent-dim: #2a4a8a;
+      --text: #e2e8f0;
+      --text-muted: #7a859e;
+      --green: #34d399;
+      --green-dim: #0d3326;
+      --yellow: #fbbf24;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      width: 34px; height: 34px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo svg { width: 20px; height: 20px; fill: #fff; }
+
+    header h1 {
+      font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+
+    .v-badge {
+      font-size: 0.72rem;
+      background: var(--accent-dim); color: var(--accent);
+      padding: 2px 8px; border-radius: 99px;
+      font-weight: 600; letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    /* Steps */
+    .steps {
+      display: flex; align-items: center; gap: 0;
+      margin-left: auto;
+    }
+
+    .step {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 16px;
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .step .step-num {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .step.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .step.active .step-num {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+    }
+
+    .step.done { color: var(--green); }
+    .step.done .step-num {
+      background: var(--green-dim); border-color: var(--green); color: var(--green);
+    }
+
+    .step-sep { color: var(--border); font-size: 0.8rem; padding: 0 2px; }
+
+    /* ── Shared form controls ───────────────────────────────────────────────── */
+    .section-label {
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 12px;
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field label { font-size: 0.82rem; font-weight: 500; color: var(--text-muted); }
+    .field label strong { color: var(--text); font-weight: 600; }
+    .field .hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+    .input-wrap {
+      display: flex; align-items: center;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .input-wrap:focus-within { border-color: var(--accent); }
+
+    .input-wrap input[type="number"] {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-size: 0.95rem; font-weight: 600;
+      padding: 10px 12px; width: 100%;
+    }
+    .input-wrap .unit {
+      padding: 10px 12px 10px 0;
+      font-size: 0.8rem; color: var(--text-muted); font-weight: 500;
+      white-space: nowrap;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"] { -moz-appearance: textfield; }
+
+    .seg-group {
+      display: flex; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    }
+    .seg-group label { flex: 1; text-align: center; cursor: pointer; }
+    .seg-group input[type="radio"] { display: none; }
+    .seg-group label span {
+      display: block; padding: 8px 6px;
+      font-size: 0.82rem; font-weight: 600; color: var(--text-muted);
+      transition: background 0.12s, color 0.12s;
+    }
+    .seg-group input[type="radio"]:checked + span { background: var(--accent); color: #fff; }
+
+    .divider { height: 1px; background: var(--border); }
+
+    /* ── Page 1 ─────────────────────────────────────────────────────────────── */
+    #page1, #page2, #page3, #page4 {
+      flex: 1; min-height: 0;
+    }
+
+    #page1 {
+      display: flex; flex-direction: column;
+    }
+
+    .p1-layout {
+      display: grid; grid-template-columns: 300px 1fr;
+      flex: 1; min-height: 0;
+    }
+
+    .sidebar {
+      background: var(--surface); border-right: 1px solid var(--border);
+      padding: 28px 22px;
+      display: flex; flex-direction: column; gap: 28px;
+      overflow-y: auto;
+    }
+
+    .p1-main {
+      padding: 28px 32px;
+      display: flex; flex-direction: column; gap: 28px;
+      overflow-y: auto;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 5px;
+      transition: border-color 0.15s;
+    }
+    .card:hover { border-color: var(--accent-dim); }
+
+    .card .card-label {
+      font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+    }
+    .card .card-mm {
+      font-size: 1.45rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; line-height: 1.1;
+    }
+    .card .card-mm .unit-lbl {
+      font-size: 0.82rem; font-weight: 500; color: var(--text-muted); margin-left: 3px;
+    }
+    .card .card-imperial { font-size: 0.82rem; color: var(--text-muted); font-weight: 500; }
+    .card .card-note {
+      font-size: 0.7rem; color: var(--text-muted);
+      margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--border);
+    }
+    .card.highlight { border-color: var(--accent-dim); background: #1a2240; }
+    .card.highlight .card-mm { color: var(--accent); }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .count-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 22px; height: 22px; padding: 0 6px;
+      border-radius: 6px; background: var(--accent-dim); color: var(--accent);
+      font-size: 0.72rem; font-weight: 700;
+    }
+
+    .group-title {
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted);
+      padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Page nav bar (Next / Back) ─────────────────────────────────────────── */
+    .page-nav {
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 16px 32px;
+      background: var(--surface); border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      position: sticky; bottom: 0; z-index: 5;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: var(--radius);
+      font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity 0.15s, background 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-ghost {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+    .btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ── Page 2 ─────────────────────────────────────────────────────────────── */
+    #page2 {
+      display: none; flex-direction: column; flex: 1;
+    }
+
+    .p2-body {
+      flex: 1; overflow-y: auto;
+      padding: 32px;
+      display: flex; flex-direction: column; gap: 28px;
+      max-width: 960px; width: 100%; margin: 0 auto;
+    }
+
+    .p2-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    .p2-section-title {
+      font-size: 0.8rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text); padding-bottom: 14px; border-bottom: 1px solid var(--border);
+    }
+
+    /* Steel summary chips */
+    .steel-summary {
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+
+    .steel-chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .steel-chip .chip-label {
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .steel-chip .chip-val {
+      font-size: 1.05rem; font-weight: 700; color: var(--accent);
+    }
+    .steel-chip .chip-sub { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* Profile selector */
+    .profile-rows { display: flex; flex-direction: column; gap: 18px; }
+
+    .profile-row { display: flex; flex-direction: column; gap: 8px; }
+
+    .profile-row-label {
+      font-size: 0.8rem; font-weight: 600; color: var(--text);
+    }
+
+    .preset-chips {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px;
+    }
+
+    .preset-chip {
+      padding: 5px 12px;
+      border-radius: 6px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 0.78rem; font-weight: 600; color: var(--text-muted);
+      cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .preset-chip.active {
+      background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
+    }
+
+    .profile-inputs {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .profile-inputs .sep { color: var(--text-muted); font-size: 0.9rem; font-weight: 600; }
+    .profile-inputs .input-wrap { flex: 1; }
+    .profile-inputs .input-wrap input { font-size: 0.9rem; }
+    .profile-inputs .lbl {
+      font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-align: center;
+    }
+    .dim-col { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+    /* Big toggle for Z / motor / bearing */
+    .big-toggle {
+      display: grid; gap: 12px;
+    }
+    .big-toggle.cols-2 { grid-template-columns: 1fr 1fr; }
+    .big-toggle.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+    .toggle-card {
+      position: relative; cursor: pointer;
+      background: var(--surface2); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .toggle-card input[type="radio"],
+    .toggle-card input[type="checkbox"] {
+      position: absolute; opacity: 0; pointer-events: none;
+    }
+    .toggle-card:has(input:checked) {
+      border-color: var(--accent); background: #1a2240;
+    }
+    .toggle-card .tc-title {
+      font-size: 1rem; font-weight: 700; color: var(--text);
+    }
+    .toggle-card:has(input:checked) .tc-title { color: var(--accent); }
+    .toggle-card .tc-sub { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+    .toggle-card .tc-badge {
+      display: inline-block; align-self: flex-start;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 4px;
+      background: var(--surface); color: var(--text-muted);
+      border: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .toggle-card:has(input:checked) .tc-badge {
+      background: var(--accent-dim); color: var(--accent); border-color: var(--accent);
+    }
+
+    /* ── Tooltip ────────────────────────────────────────────────────────────── */
+    [data-tooltip] { position: relative; }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: #0a0c12; color: var(--text);
+      font-size: 0.75rem; font-weight: 500; line-height: 1.4;
+      padding: 7px 11px; border-radius: 7px;
+      border: 1px solid var(--border);
+      white-space: nowrap; pointer-events: none;
+      opacity: 0; transition: opacity 0.15s;
+      z-index: 10;
+    }
+    [data-tooltip]:hover::after { opacity: 1; }
+
+    /* ── Shop link inside card ───────────────────────────────────────────────── */
+    .shop-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 8px; align-self: flex-start;
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--accent); text-decoration: none;
+      padding: 3px 0;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .shop-link:hover { border-bottom-color: var(--accent); }
+    .shop-link svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+    /* ── Page 3 ─────────────────────────────────────────────────────────────── */
+    .p3-body {
+      flex: 1; overflow-y: auto;
+      padding: 32px;
+      display: flex; flex-direction: column; gap: 20px;
+      max-width: 860px; width: 100%; margin: 0 auto;
+    }
+
+    .p3-page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding-bottom: 20px; border-bottom: 1px solid var(--border);
+    }
+
+    .p3-title {
+      font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em;
+    }
+
+    .p3-subtitle {
+      font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;
+    }
+
+    .bom-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+
+    .bom-section-title {
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 12px 18px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bom-table { width: 100%; border-collapse: collapse; }
+
+    .bom-table tr { border-bottom: 1px solid var(--border); }
+    .bom-table tr:last-child { border-bottom: none; }
+    .bom-table tr:hover td { background: var(--surface2); }
+
+    .bom-table td {
+      padding: 11px 18px;
+      font-size: 0.84rem; vertical-align: middle;
+    }
+
+    .bom-part {
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+      width: 1%; /* shrink to content */
+    }
+
+    .bom-desc { color: var(--text); }
+
+    .bom-qty {
+      text-align: right; white-space: nowrap;
+      font-weight: 700; color: var(--text);
+      width: 1%;
+    }
+
+    .bom-qty .qty-num { font-size: 1rem; }
+    .bom-qty .qty-unit { font-size: 0.72rem; color: var(--text-muted); margin-left: 3px; }
+
+    .bom-note {
+      font-size: 0.72rem; color: var(--text-muted);
+      display: block; margin-top: 2px;
+    }
+
+    @media (max-width: 700px) {
+      .p1-layout { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+      .p1-main { padding: 20px 16px; }
+      .p2-body { padding: 16px; }
+      .big-toggle.cols-2 { grid-template-columns: 1fr; }
+      header { padding: 0 16px; }
+      .steps .step span:not(.step-num) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zm11 0h7v7h-7zm0 11h7v7h-7zM3 17l3.5-6 3.5 6z"/></svg>
+  </div>
+  <h1>PrintNC Calculator</h1>
+  <span class="v-badge">v4</span>
+
+  <nav class="steps">
+    <div class="step active" id="step1">
+      <span class="step-num">1</span>
+      <span>Size</span>
+    </div>
+    <span class="step-sep">›</span>
+    <div class="step" id="step2">
+      <span class="step-num">2</span>
+      <span>Options</span>
+    </div>
+    <span class="step-sep">›</span>
+    <div class="step" id="step3">
+      <span class="step-num">3</span>
+      <span>Parts List</span>
+    </div>
+    <span class="step-sep">›</span>
+    <div class="step" id="step4">
+      <span class="step-num">4</span>
+      <span>Electronics</span>
+    </div>
+  </nav>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════════ PAGE 1 -->
+<div id="page1">
+  <div class="p1-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div>
+        <div class="section-label">Cutting Area</div>
+        <div class="field">
+          <label><strong>X Axis</strong></label>
+          <div class="input-wrap">
+            <input type="number" id="xCut" value="625" min="100" max="3000" step="1" />
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="field">
+          <label><strong>Y Axis</strong></label>
+          <div class="input-wrap">
+            <input type="number" id="yCut" value="625" min="100" max="3000" step="1" />
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="field">
+          <label><strong>Z Rail Length</strong></label>
+          <div class="input-wrap">
+            <input type="number" id="zRailIn" value="300" min="200" max="600" step="50" />
+            <span class="unit">mm</span>
+          </div>
+          <span class="hint">300 or 350 mm are standard</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Options</div>
+        <div class="field">
+          <label><strong>Steel Rounding Factor</strong></label>
+          <div class="seg-group">
+            <label><input type="radio" name="srf" value="5"  /><span>5</span></label>
+            <label><input type="radio" name="srf" value="10" /><span>10</span></label>
+            <label><input type="radio" name="srf" value="25" checked /><span>25</span></label>
+            <label><input type="radio" name="srf" value="50" /><span>50</span></label>
+          </div>
+          <span class="hint">Rail lengths round up to nearest multiple</span>
+        </div>
+        <div class="field">
+          <label><strong>X Carriages per rail</strong></label>
+          <div class="seg-group">
+            <label><input type="radio" name="xCarr" value="1" /><span>1</span></label>
+            <label><input type="radio" name="xCarr" value="2" checked /><span>2</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label><strong>Y Carriages per rail</strong></label>
+          <div class="seg-group">
+            <label><input type="radio" name="yCarr" value="1" /><span>1</span></label>
+            <label><input type="radio" name="yCarr" value="2" checked /><span>2</span></label>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main results -->
+    <main class="p1-main">
+      <div>
+        <div class="group-title">Linear Rails</div>
+        <div style="height:12px"></div>
+        <div class="results-grid" id="railCards"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="group-title">Steel Tubing — Cut List</div>
+        <div style="height:12px"></div>
+        <div class="results-grid" id="tubeCards"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="group-title">Ballscrews</div>
+        <div style="height:12px"></div>
+        <div class="results-grid" id="screwCards"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="page-nav">
+    <button class="btn btn-primary" onclick="goTo(2)">
+      Next — Options
+      <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ PAGE 2 -->
+<div id="page2">
+  <div class="p2-body">
+
+    <!-- Steel cut summary -->
+    <div class="p2-section">
+      <div class="p2-section-title">Your Steel Cut List</div>
+      <div class="steel-summary" id="steelSummary"></div>
+    </div>
+
+    <!-- Steel profiles -->
+    <div class="p2-section">
+      <div class="p2-section-title">Steel Tube Profiles</div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-top:-8px;">
+        Set the cross-section for each section of steel. This doesn't change cut lengths — it tells the parts list what to order.
+      </p>
+      <div class="profile-rows">
+
+        <!-- Y Axis Steel -->
+        <div class="profile-row" id="profileY">
+          <div class="profile-row-label">Y Axis Steel <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem;">(×2 — the long side rails)</span></div>
+          <div class="preset-chips">
+            <span class="preset-chip active" data-target="Y" data-w="75" data-h="50" data-t="3">75×50×3</span>
+            <span class="preset-chip" data-target="Y" data-w="100" data-h="50" data-t="3">100×50×3</span>
+            <span class="preset-chip" data-target="Y" data-w="80" data-h="80" data-t="3">80×80×3</span>
+            <span class="preset-chip" data-target="Y" data-w="" data-h="" data-t="">Custom</span>
+          </div>
+          <div class="profile-inputs">
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Yw" value="75" min="20" max="200" /><span class="unit">W</span></div>
+            </div>
+            <span class="sep">×</span>
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Yh" value="50" min="20" max="200" /><span class="unit">H</span></div>
+            </div>
+            <span class="sep">×</span>
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Yt" value="3" min="1" max="20" /><span class="unit">T</span></div>
+            </div>
+            <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;padding-left:4px;">mm</span>
+          </div>
+        </div>
+
+        <!-- X Frame Support -->
+        <div class="profile-row" id="profileS">
+          <div class="profile-row-label">X Frame Support <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem;">(cross-members)</span></div>
+          <div class="preset-chips">
+            <span class="preset-chip active" data-target="S" data-w="75" data-h="50" data-t="3">75×50×3</span>
+            <span class="preset-chip" data-target="S" data-w="80" data-h="80" data-t="3">80×80×3</span>
+            <span class="preset-chip" data-target="S" data-w="" data-h="" data-t="">Custom</span>
+          </div>
+          <div class="profile-inputs">
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Sw" value="75" min="20" max="200" /><span class="unit">W</span></div>
+            </div>
+            <span class="sep">×</span>
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Sh" value="50" min="20" max="200" /><span class="unit">H</span></div>
+            </div>
+            <span class="sep">×</span>
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="St" value="3" min="1" max="20" /><span class="unit">T</span></div>
+            </div>
+            <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;padding-left:4px;">mm</span>
+          </div>
+        </div>
+
+        <!-- X Gantry -->
+        <div class="profile-row" id="profileG">
+          <div class="profile-row-label">X Gantry <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem;">(horizontal beam — Z rides on this)</span></div>
+          <div class="preset-chips">
+            <span class="preset-chip active" data-target="G" data-w="75" data-h="75" data-t="4">75×75×4</span>
+            <span class="preset-chip" data-target="G" data-w="80" data-h="80" data-t="4">80×80×4</span>
+            <span class="preset-chip" data-target="G" data-w="" data-h="" data-t="">Custom</span>
+          </div>
+          <div class="profile-inputs">
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Gw" value="75" min="20" max="200" /><span class="unit">W</span></div>
+            </div>
+            <span class="sep">×</span>
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Gh" value="75" min="20" max="200" /><span class="unit">H</span></div>
+            </div>
+            <span class="sep">×</span>
+            <div class="dim-col">
+              <div class="input-wrap"><input type="number" id="Gt" value="4" min="1" max="20" /><span class="unit">T</span></div>
+            </div>
+            <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;padding-left:4px;">mm</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Z Axis -->
+    <div class="p2-section">
+      <div class="p2-section-title">Z Axis</div>
+      <div class="big-toggle cols-2">
+
+        <label class="toggle-card">
+          <input type="radio" name="zSize" value="300" checked onchange="onZChange()" />
+          <div class="tc-title">300 mm</div>
+          <div class="tc-sub">Standard Z travel. Works with most spindle setups.</div>
+          <span class="tc-badge">Rail × 2 &nbsp;·&nbsp; Ballscrew × 1</span>
+        </label>
+
+        <label class="toggle-card">
+          <input type="radio" name="zSize" value="350" onchange="onZChange()" />
+          <div class="tc-title">350 mm</div>
+          <div class="tc-sub">Extra Z clearance. Useful for thicker workpieces or 4th axis.</div>
+          <span class="tc-badge">Rail × 2 &nbsp;·&nbsp; Ballscrew × 1</span>
+        </label>
+
+      </div>
+    </div>
+
+    <!-- Drive system -->
+    <div class="p2-section">
+      <div class="p2-section-title">Drive System</div>
+      <div class="big-toggle cols-2">
+
+        <label class="toggle-card">
+          <input type="radio" name="driveLoop" value="open" checked />
+          <div class="tc-title">Open Loop</div>
+          <div class="tc-sub">Standard NEMA 23 steppers. No encoder feedback. Lower cost, simpler wiring.</div>
+          <span class="tc-badge">NEMA 23</span>
+        </label>
+
+        <label class="toggle-card">
+          <input type="radio" name="driveLoop" value="closed" />
+          <div class="tc-title">Closed Loop</div>
+          <div class="tc-sub">Steppers with encoder feedback. Detects missed steps, higher reliability at speed.</div>
+          <span class="tc-badge">Closed-Loop Stepper</span>
+        </label>
+
+      </div>
+    </div>
+
+    <!-- Bearing blocks / motor mounts -->
+    <div class="p2-section">
+      <div class="p2-section-title">Ballscrew Bearing Blocks</div>
+      <div class="big-toggle cols-2">
+
+        <label class="toggle-card">
+          <input type="radio" name="bearing" value="bk12" checked />
+          <div class="tc-title">BK12 / BF12</div>
+          <div class="tc-sub">Standard fixed/floating bearing block set. Designed for 12 mm ballscrews. Very common choice for PrintNC builds.</div>
+          <span class="tc-badge">Per axis: 1× BK12 + 1× BF12</span>
+        </label>
+
+        <label class="toggle-card">
+          <input type="radio" name="bearing" value="hm1257" />
+          <div class="tc-title">HM12-57</div>
+          <div class="tc-sub">Alternative to the BK12 fixed-end block. Integrates the motor mount and plum coupling housing internally — pairs with a BF12 on the other end of the screw.</div>
+          <span class="tc-badge">Fixed end · pairs with BF12</span>
+        </label>
+
+      </div>
+    </div>
+
+    <!-- Electronics -->
+    <div class="p2-section">
+      <div class="p2-section-title">Electronics</div>
+      <div class="big-toggle cols-2">
+
+        <label class="toggle-card check-card" data-tooltip="Contact Logan on the PrintNC discord">
+          <input type="checkbox" name="acc" value="loganpcb" />
+          <div class="tc-title">Logan PCBs</div>
+          <div class="tc-sub">Breakout boards that simplify stepper driver wiring. Reduces point-to-point cabling significantly.</div>
+          <span class="tc-badge">Optional</span>
+        </label>
+
+        <label class="toggle-card check-card">
+          <input type="checkbox" name="acc" value="flexihal" />
+          <div class="tc-title">Expatria FlexiHAL</div>
+          <div class="tc-sub">Motion controller board running grblHAL. Clean integration with the PrintNC ecosystem.</div>
+          <span class="tc-badge">Controller</span>
+          <a class="shop-link" href="https://expatria.myshopify.com/products/flexihal-isolated-cnc-controller-rev-a7-for-grblhal-and-linuxcnc" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+            View in shop
+            <svg viewBox="0 0 12 12"><path d="M1 11L11 1M11 1H5M11 1v6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </label>
+
+        <label class="toggle-card check-card">
+          <input type="checkbox" name="acc" value="jog2k" />
+          <div class="tc-title">Expatria Jog 2000</div>
+          <div class="tc-sub">Dedicated jog controller for the FlexiHAL. Wireless pendant-style interface for manual machine movement.</div>
+          <span class="tc-badge">Jog Controller</span>
+          <a class="shop-link" href="https://expatria.myshopify.com/products/jog2k-keypad-pendant-pcba" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+            View in shop
+            <svg viewBox="0 0 12 12"><path d="M1 11L11 1M11 1H5M11 1v6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </label>
+
+      </div>
+    </div>
+
+    <!-- Accessories -->
+    <div class="p2-section">
+      <div class="p2-section-title">Accessories</div>
+      <div class="big-toggle cols-2">
+
+        <label class="toggle-card check-card">
+          <input type="checkbox" name="acc" value="probe" />
+          <div class="tc-title">3D Probe</div>
+          <div class="tc-sub">Touch probe for workpiece edge-finding and surface mapping. Mounts in the spindle like a tool.</div>
+          <span class="tc-badge">Optional</span>
+        </label>
+
+        <label class="toggle-card check-card">
+          <input type="checkbox" name="acc" value="toolsetter" />
+          <div class="tc-title">Tool Setter</div>
+          <div class="tc-sub">Fixed height reference probe mounted to the bed. Automatically measures tool length offsets between tool changes.</div>
+          <span class="tc-badge">Optional</span>
+        </label>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div class="page-nav" style="justify-content:space-between;">
+    <button class="btn btn-ghost" onclick="goTo(1)">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(3)">
+      Next — Parts List
+      <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ PAGE 3 -->
+<div id="page3" style="display:none;flex-direction:column;">
+  <div class="p3-body">
+    <div class="p3-page-header">
+      <div>
+        <h2 class="p3-title">Kinematics BOM</h2>
+        <p class="p3-subtitle" id="bomSubtitle"></p>
+      </div>
+    </div>
+    <div id="bomContent"></div>
+  </div>
+  <div class="page-nav" style="justify-content:space-between;">
+    <button class="btn btn-ghost" onclick="goTo(2)">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </button>
+    <button class="btn btn-primary" onclick="goTo(4)">
+      Next — Electronics
+      <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ PAGE 4 -->
+<div id="page4" style="display:none;flex-direction:column;">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--text-muted);">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+    </svg>
+    <p style="font-size:1.1rem;font-weight:700;color:var(--text);">Electronics BOM</p>
+    <p style="font-size:0.85rem;">Coming soon.</p>
+  </div>
+  <div class="page-nav" style="justify-content:space-between;">
+    <button class="btn btn-ghost" onclick="goTo(3)">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      Back
+    </button>
+  </div>
+</div>
+
+<script>
+  // ── State ─────────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function mmToIn(mm) { return Math.ceil((mm / 25.4) * 4) / 4; }
+
+  function fmtIn(inches) {
+    const whole = Math.floor(inches);
+    const frac  = Math.round((inches - whole) * 4) / 4;
+    const map   = { 0: '', 0.25: '¼', 0.5: '½', 0.75: '¾' };
+    const f     = map[frac] ?? '';
+    return whole > 0 ? `${whole}${f}"` : `${f}"`;
+  }
+
+  function fmtMm(mm) { return mm.toFixed(0); }
+
+  // ── Core calculation (shared) ─────────────────────────────────────────────
+  function calculate() {
+    const xCut  = parseFloat($('xCut').value)  || 625;
+    const yCut  = parseFloat($('yCut').value)  || 625;
+    const zRail = parseFloat($('zRailIn').value) || 300;
+    const srf   = parseFloat(document.querySelector('input[name="srf"]:checked').value);
+    const xCarr = parseInt(document.querySelector('input[name="xCarr"]:checked').value);
+    const yCarr = parseInt(document.querySelector('input[name="yCarr"]:checked').value);
+
+    const frameLong  = 75;
+    const frameShort = 50;
+
+    const xRailLen = srf * Math.ceil((xCut + 65 + xCarr * 50) / srf);
+    const yRailLen = srf * Math.ceil((yCut + 65 + yCarr * 50) / srf);
+
+    const yFrameWidth  = frameShort;
+    const yRollerWidth = frameLong;
+    const leftGap      = xCarr === 1 ? 25 : 5;
+    const rightGap     = xCarr === 1 ? 25 : 20;
+    const xFrameOffset = Math.floor((yFrameWidth + yRollerWidth + leftGap + rightGap) / 5) * 5;
+    const xFrameLen    = xRailLen + xFrameOffset;
+    const yFrameLen    = yRailLen + 150;
+
+    const xFrameBackOffset  = 50;
+    const xFrameFrontOffset = 50;
+    const xFrameWidth       = frameLong;
+    const xFrameCount       = Math.max(3, Math.ceil(
+      (yFrameLen - xFrameBackOffset - xFrameFrontOffset - xFrameWidth) / (250 + xFrameWidth)
+    ));
+
+    const xGantryLen = xFrameLen + (yRollerWidth - yFrameWidth);
+    const yRollerLen = 50 + yCarr * 50;
+    const xRollerLen = 50 + xCarr * 50;
+
+    const xScrew = xRailLen + 100;
+    const yScrew = yRailLen + 100;
+    const zScrew = zRail;
+
+    return {
+      xRailLen, yRailLen, zRail,
+      xFrameLen, yFrameLen, xFrameCount,
+      xGantryLen, yRollerLen, xRollerLen,
+      xScrew, yScrew, zScrew,
+    };
+  }
+
+  // ── Page 1 render ─────────────────────────────────────────────────────────
+  function card({ label, qty, mm, note, highlight }) {
+    const inches = mmToIn(mm);
+    return `
+      <div class="card ${highlight ? 'highlight' : ''}">
+        <div class="card-header">
+          <span class="card-label">${label}</span>
+          ${qty ? `<span class="count-badge">${qty}×</span>` : ''}
+        </div>
+        <div class="card-mm">${fmtMm(mm)}<span class="unit-lbl">mm</span></div>
+        <div class="card-imperial">${fmtIn(inches)}</div>
+        ${note ? `<div class="card-note">${note}</div>` : ''}
+      </div>`;
+  }
+
+  function renderPage1() {
+    const r = calculate();
+
+    $('railCards').innerHTML = [
+      card({ label: 'X Linear Rail',  qty: 2, mm: r.xRailLen, highlight: true }),
+      card({ label: 'Y Linear Rail',  qty: 2, mm: r.yRailLen, highlight: true }),
+      card({ label: 'Z Linear Rail',  qty: 2, mm: r.zRail }),
+    ].join('');
+
+    $('tubeCards').innerHTML = [
+      card({ label: 'Y Axis Steel',    qty: 2,            mm: r.yFrameLen,  note: 'Long side rails — gantry rides on these' }),
+      card({ label: 'X Frame Support', qty: r.xFrameCount, mm: r.xFrameLen, note: `${r.xFrameCount} cross members` }),
+      card({ label: 'X Gantry',        qty: 1,            mm: r.xGantryLen, note: 'Horizontal beam — Z axis rides on this' }),
+      card({ label: 'Y Roller',        qty: 2,            mm: r.yRollerLen }),
+      card({ label: 'X Roller',        qty: 2,            mm: r.xRollerLen }),
+    ].join('');
+
+    $('screwCards').innerHTML = [
+      card({ label: 'X Ballscrew', qty: 1, mm: r.xScrew }),
+      card({ label: 'Y Ballscrew', qty: 2, mm: r.yScrew }),
+      card({ label: 'Z Ballscrew', qty: 1, mm: r.zScrew }),
+    ].join('');
+  }
+
+  // ── Page 2 render ─────────────────────────────────────────────────────────
+  function renderPage2() {
+    const r = calculate();
+
+    function chip(label, qty, mm) {
+      return `
+        <div class="steel-chip">
+          <div class="chip-label">${label} <span style="opacity:.6">×${qty}</span></div>
+          <div class="chip-val">${fmtMm(mm)}<span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);margin-left:3px;">mm</span></div>
+          <div class="chip-sub">${fmtIn(mmToIn(mm))}</div>
+        </div>`;
+    }
+
+    $('steelSummary').innerHTML = [
+      chip('Y Axis Steel',    2,            r.yFrameLen),
+      chip('X Frame Support', r.xFrameCount, r.xFrameLen),
+      chip('X Gantry',        1,            r.xGantryLen),
+      chip('Y Roller',        2,            r.yRollerLen),
+      chip('X Roller',        2,            r.xRollerLen),
+    ].join('');
+
+    // Sync Z toggle to current zRail value
+    const zVal = parseFloat($('zRailIn').value) || 300;
+    const best = zVal >= 325 ? '350' : '300';
+    const zRadio = document.querySelector(`input[name="zSize"][value="${best}"]`);
+    if (zRadio) zRadio.checked = true;
+  }
+
+  // ── Z sync ────────────────────────────────────────────────────────────────
+  function onZChange() {
+    const zSize = document.querySelector('input[name="zSize"]:checked').value;
+    $('zRailIn').value = zSize;
+    renderPage1();
+    renderPage2();
+  }
+
+  // ── Preset chips ──────────────────────────────────────────────────────────
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const target = chip.dataset.target;
+      const w = chip.dataset.w;
+      const h = chip.dataset.h;
+      const t = chip.dataset.t;
+
+      // Deactivate siblings
+      chip.closest('.profile-row').querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+
+      if (w !== '') {
+        $(target + 'w').value = w;
+        $(target + 'h').value = h;
+        $(target + 't').value = t;
+      }
+    });
+  });
+
+  // Mark custom on manual input
+  ['Y','S','G'].forEach(t => {
+    ['w','h','t'].forEach(dim => {
+      $(t + dim).addEventListener('input', () => {
+        const row = $(t + dim).closest('.profile-row');
+        row.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+        row.querySelector('.preset-chip:last-child').classList.add('active'); // Custom
+      });
+    });
+  });
+
+  // ── Page 3 render ─────────────────────────────────────────────────────────
+  function renderPage3() {
+    const r = calculate();
+    const bearing  = document.querySelector('input[name="bearing"]:checked')?.value || 'bk12';
+    const accs     = [...document.querySelectorAll('input[name="acc"]:checked')].map(e => e.value);
+    const xCut     = parseFloat($('xCut').value)   || 625;
+    const yCut     = parseFloat($('yCut').value)   || 625;
+
+    $('bomSubtitle').textContent =
+      `${xCut}×${yCut} mm cutting area · Z ${r.zRail} mm · ${bearing === 'hm1257' ? 'HM12-57' : 'BK12'} · ${
+        document.querySelector('input[name="driveLoop"]:checked')?.value === 'closed' ? 'Closed Loop' : 'Open Loop'}`;
+
+    const fixedBlock = bearing === 'hm1257' ? 'HM12-57-C5' : 'BK12-C5';
+    const xCarr = parseInt(document.querySelector('input[name="xCarr"]:checked').value);
+    const yCarr = parseInt(document.querySelector('input[name="yCarr"]:checked').value);
+
+    // Combine X+Y rail rows if same length
+    const railRows = [];
+    if (r.xRailLen === r.yRailLen) {
+      railRows.push([`HGR20-${r.xRailLen}`, 'X/Y Linear Rail (HGR20)', qty(4)]);
+    } else {
+      railRows.push([`HGR20-${r.xRailLen}`, 'X Linear Rail (HGR20)', qty(2)]);
+      railRows.push([`HGR20-${r.yRailLen}`, 'Y Linear Rail (HGR20)', qty(2)]);
+    }
+    railRows.push([`HGR15-${r.zRail}`, 'Z Linear Rail (HGR15)', qty(2)]);
+    railRows.push(['HGW20CC', 'X/Y Rail Carriage', qty(xCarr * 2 + yCarr * 2)]);
+    railRows.push(['HGH15CA', 'Z Rail Carriage', qty(4)]);
+
+    // Combine X+Y ballscrew rows if same length
+    const screwRows = [];
+    if (r.xScrew === r.yScrew) {
+      screwRows.push([`SFU1610-${r.xScrew}`, 'X/Y Ballscrew with nut', qty(3)]);
+    } else {
+      screwRows.push([`SFU1610-${r.xScrew}`, 'X Ballscrew with nut', qty(1)]);
+      screwRows.push([`SFU1610-${r.yScrew}`, 'Y Ballscrew with nut', qty(2)]);
+    }
+    screwRows.push([`SFU1204-${r.zScrew}`, 'Z Ballscrew with nut', qty(1)]);
+    screwRows.push(['DSG12H 22mm', 'Z Ballscrew Nut Housing', qty(1)]);
+
+    const sections = [
+      section('Linear Motion', railRows),
+      section('Drive', screwRows),
+      section('Bearing Blocks & Couplings', [
+        [fixedBlock,        `X/Y Fixed End Bearing Block`,          qty(3)],
+        ['HM10-57-C5',      'Z Fixed End Bearing Block',            qty(1)],
+        ['BF12',            'Floating End Bearing Block',           qty(3)],
+        ['XB30×40-8×10',    'X/Y Plum Coupling',                   qty(3)],
+        ['XB25×30-8×8',     'Z Plum Coupling',                     qty(1)],
+      ]),
+      section('Spindle & Coolant', [
+        ['—', '2.2kw 220v Water Cooled Spindle',        qty(1)],
+        ['HY01', '2.2kw 220v VFD',                     qty(1)],
+        ['—', '75w 220v Water Pump + 10m Water Pipe',   qty(1)],
+        ['—', 'ER20 Collet Set',                        qty(1, 'set')],
+        ['—', '80mm Spindle Clamp (3 screw)',            qty(1)],
+      ]),
+      section('Cable Management', [
+        ['25×57 R75', 'Cable Drag Chain', qty(3)],
+      ]),
+      section('Sensors', [
+        ['LJ8A3-2-Z-AX M8', 'Inductive Limit Switch', qty(6)],
+        ['—', 'Emergency Stop', qty(1)],
+      ]),
+      ...electronicsSection(accs),
+      ...accessoriesSection(accs),
+      section('Fasteners', [
+        ['M4×12',   'Socket Head Cap Screw', qty(25)],
+        ['M4×16',   'Socket Head Cap Screw', qty(25)],
+        ['M5×12',   'Socket Head Cap Screw', qty(10)],
+        ['M5×20',   'Socket Head Cap Screw', qty(null)],
+        ['M6×12',   'Socket Head Cap Screw', qty(null)],
+        ['M6×30',   'Socket Head Cap Screw', qty(30)],
+        ['M6×50',   'Socket Head Cap Screw', qty(30)],
+        ['M8×45',   'Socket Head Cap Screw', qty(3)],
+        ['M5 NUT',  'Hex Nut',               qty(54)],
+        ['M8×8',    'Grub Screw',            qty(4)],
+      ]),
+    ];
+
+    $('bomContent').innerHTML = sections.join('');
+  }
+
+  function qty(n, unit) {
+    if (n === null) return `<span class="qty-num" style="color:var(--text-muted)">N/A</span>`;
+    return `<span class="qty-num">${n}</span>${unit ? `<span class="qty-unit">${unit}</span>` : ''}`;
+  }
+
+  function section(title, rows) {
+    return `
+      <div class="bom-section">
+        <div class="bom-section-title">${title}</div>
+        <table class="bom-table">
+          ${rows.map(([part, desc, q]) => `
+            <tr>
+              <td class="bom-part">${part}</td>
+              <td class="bom-desc">${desc}</td>
+              <td class="bom-qty">${q}</td>
+            </tr>`).join('')}
+        </table>
+      </div>`;
+  }
+
+  const extLink = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:5px;vertical-align:middle"><path d="M1 11L11 1M11 1H5M11 1v6"/></svg>`;
+
+  function electronicsSection(accs) {
+    const rows = [];
+    if (accs.includes('loganpcb'))
+      rows.push(['—',
+        `<span data-tooltip="Contact Logan on the PrintNC discord" style="cursor:default">Logan PCBs <span style="font-size:0.7rem;color:var(--text-muted);border:1px solid var(--border);border-radius:3px;padding:1px 5px;">Discord</span></span>`,
+        qty(1, 'set')]);
+    if (accs.includes('flexihal'))
+      rows.push(['—',
+        `<a href="https://expatria.myshopify.com/products/flexihal-isolated-cnc-controller-rev-a7-for-grblhal-and-linuxcnc" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Expatria FlexiHAL${extLink}</a>`,
+        qty(1)]);
+    if (accs.includes('jog2k'))
+      rows.push(['—',
+        `<a href="https://expatria.myshopify.com/products/jog2k-keypad-pendant-pcba" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">Expatria Jog 2000${extLink}</a>`,
+        qty(1)]);
+    return rows.length ? [section('Electronics', rows)] : [];
+  }
+
+  function accessoriesSection(accs) {
+    const rows = [];
+    if (accs.includes('probe'))      rows.push(['—', '3D Probe Edge Finder', qty(1)]);
+    if (accs.includes('toolsetter')) rows.push(['—', 'Tool Setter', qty(1)]);
+    return rows.length ? [section('Accessories', rows)] : [];
+  }
+
+  // ── Page navigation ────────────────────────────────────────────────────────
+  function goTo(page) {
+    [1, 2, 3, 4].forEach(n => {
+      $(`page${n}`).style.display = 'none';
+      const step = $(`step${n}`);
+      if (!step) return;
+      step.classList.remove('active', 'done');
+      if (n < page)  step.classList.add('done');
+      if (n === page) step.classList.add('active');
+    });
+
+    $(`page${page}`).style.display = 'flex';
+    $(`page${page}`).style.flexDirection = 'column';
+
+    if (page === 2) renderPage2();
+    if (page === 3) renderPage3();
+  }
+
+  // ── Events ────────────────────────────────────────────────────────────────
+  ['xCut', 'yCut', 'zRailIn'].forEach(id => $(id).addEventListener('input', renderPage1));
+  document.querySelectorAll('input[type="radio"][name="srf"], input[type="radio"][name="xCarr"], input[type="radio"][name="yCarr"]')
+    .forEach(el => el.addEventListener('change', renderPage1));
+
+  // Init
+  renderPage1();
+</script>
+</body>
+</html>
